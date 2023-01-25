@@ -9,9 +9,9 @@ A TCP protocol I made to build a chat program.
 * The methods and modes are uppercase to show they are commands while talking about it in chat.
 * Permission level can range between 0 and 3
 
-# Methods, Modes, and Errors that are passed using the protocol
+## Methods, Modes, and Errors that are passed using the protocol
 
-## Methods
+### Methods
 | Method and Payload           | Description                                                                      | For clients, servers, or both | Permissions required |
 |------------------------------|:--------------------------------------------------------------------------------:|:------------------------------|:---------------------|
 | READY                        | Tells the other side they are ready to accept commands, always used on connect   | Both                          | 0                    |
@@ -21,7 +21,7 @@ A TCP protocol I made to build a chat program.
 | ERROR (error message)        | Sends to the other side an error message, usually in response to another request | Both                          | 0                    |
 | ACK                          | Acknowledging a request, usually means a request succeeded                       | Both                          | 0                    |
 
-## Modes
+### Modes
 | Mode        | Description                            |
 |-------------|:---------------------------------------|
 | TO          | Sending to the server                  |
@@ -29,7 +29,7 @@ A TCP protocol I made to build a chat program.
 | FROM        | Sending from the server                |
 | FROM_TELNET | Sending from the server in telnet mode |
 
-## Error Messages
+### Error Messages
 | Error          | Description                                         | Sent to clients, servers, or both |
 |----------------|:---------------------------------------------------:|:----------------------------------|
 | LoginRequired  | You need to login to run this command               | Clients                           |
