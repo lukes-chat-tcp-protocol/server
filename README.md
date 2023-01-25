@@ -1,4 +1,4 @@
-# What is it
+# Chat TCP Protocol
 
 ## Description
 A TCP protocol I made to build a chat program.
