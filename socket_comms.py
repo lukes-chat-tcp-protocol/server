@@ -83,7 +83,6 @@ class SocketCommunication:
                     self.send(conn, client_env, b'ACK')
         else:
             self.send(conn, client_env, b'ERROR InvalidCommand')
-            print(args)
         return client_env
     def handle_connection(self, conn, addr):
         self.conns.append({
