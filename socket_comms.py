@@ -37,7 +37,7 @@ class SocketCommunication:
             conn.send(data)
     def recv(self, conn, client_env, size):
         if client_env['mode'].endswith('_TELNET'):
-            data = conn.recv(size).replace(b'\r\n', b'')
+            data = conn.recv(size).replace(b'\r', b'').replace(b'\n', b'')
         else:
             data = conn.recv(size)
         return data
