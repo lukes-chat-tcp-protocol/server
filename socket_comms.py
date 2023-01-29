@@ -32,9 +32,12 @@ class SocketCommunication:
             data = conn.recv(size)
         return data
     def process_command(self, args, client_env, conn):
-        def check_login():
+        def check_login(permission_level):
             if client_env['login']:
-                return True
+                if client_env['permission_level'] >= permission_level:
+                    return True
+                else:
+                    self.send(conn, client_env, b'ERROR PermissionDenied')
             else:
                 self.send(conn, client_env, b'ERROR LoginRequired')
                 return False
@@ -59,7 +62,7 @@ class SocketCommunication:
 
             return client_env
         elif args[0] == 'CONSOLE_LOG':
-            if check_login():
+            if check_login(3):
                 try:
                     print(base64.b64decode(args[1].encode()).decode('utf-8'))
                 except IndexError:
