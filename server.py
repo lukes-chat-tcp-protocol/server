@@ -1,5 +1,24 @@
 import socket_comms
+import argparse
 
-comms = socket_comms.SocketCommunication('0.0.0.0', 3462)
+parser = argparse.ArgumentParser()
+parser.add_argument('-b', '--bind-address', type=str, help='IP Address to bind to')
+parser.add_argument('-p', '--port', type=int, help='Port to bind to')
+parser.add_argument('--cert', type=str, help='SSL Certificate to use')
+parser.add_argument('--key', type=str, help='SSL Key to use')
+parser.add_argument('--insecure', action='store_true')
+
+args = parser.parse_args()
+
+if args.bind_address == None:
+    args.bind_address = '0.0.0.0'
+
+if args.port == None:
+    args.port = 3462
+
+if args.cert == None:
+    args.insecure = True
+
+comms = socket_comms.SocketCommunication(args)
 
 comms.start_server()

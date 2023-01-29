@@ -7,12 +7,19 @@ import ssl
 auth = auth_mgmt.AuthenticationManagement()
 
 class SocketCommunication:
-    def __init__(self, bind_address, port):
-        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-        self.ssl_context.load_cert_chain(certfile='cert.pem', keyfile='privkey.pem')
-        self.sock = self.ssl_context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
-        self.bind_address = bind_address
-        self.port = port
+    def __init__(self, args):
+        if args.insecure:
+            print('WARNING! Running in insecure mode. Only do this if this is a development enviorment.')
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+            if args.key == None:
+                self.ssl_context.load_cert_chain(certfile=args.cert)
+            else:
+                self.ssl_context.load_cert_chain(certfile=args.cert, keyfile=args.key)
+            self.sock = self.ssl_context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+        self.bind_address = args.bind_address
+        self.port = args.port
         self.conns = []
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     def start_server(self):
@@ -76,6 +83,7 @@ class SocketCommunication:
                     self.send(conn, client_env, b'ACK')
         else:
             self.send(conn, client_env, b'ERROR InvalidCommand')
+            print(args)
         return client_env
     def handle_connection(self, conn, addr):
         self.conns.append({
