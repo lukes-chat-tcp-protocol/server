@@ -6,8 +6,7 @@ class AuthenticationManagement:
         self.db = 'main.db'
         db = sqlite3.connect(self.db)
         cur = db.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS users(id AUTOINCREMENT PRIMARY INTEGER, username TEXT, password TEXT, permission_level INTEGER)')
-        db.commit()
+        cur.execute('CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, permission_level INTEGER)')
         cur.close()
         db.close()
     
