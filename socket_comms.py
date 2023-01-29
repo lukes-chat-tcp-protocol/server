@@ -51,7 +51,7 @@ class SocketCommunication:
             else:
                 auth_attempt = auth.login(username, password)
                 if auth_attempt == False:
-                    self.send(b'ERROR LoginFailed')
+                    self.send(conn, client_env, b'ERROR LoginFailed')
                 else:
                     self.send(conn, client_env, b'ACK')
                     client_env['login'] = True
