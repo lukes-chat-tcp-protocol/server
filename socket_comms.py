@@ -49,8 +49,14 @@ class SocketCommunication:
             except:
                 self.send(conn, client_env, b'ERROR InvalidB64Code')
             else:
-                self.send(conn, client_env, b'ACK')
-                client_env['login'] = True
+                auth_attempt = auth.login(username, password)
+                if auth_attempt == False:
+                    self.send(b'ERROR LoginFailed')
+                else:
+                    self.send(conn, client_env, b'ACK')
+                    client_env['login'] = True
+                    client_env['permission_level'] = auth_attempt
+
             return client_env
         elif args[0] == 'CONSOLE_LOG':
             if check_login():
