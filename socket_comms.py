@@ -5,8 +5,6 @@ import auth_mgmt
 import cmd_mgmt
 import ssl
 
-auth = auth_mgmt.AuthenticationManagement()
-
 class SocketCommunication:
     def __init__(self, args):
         if args.insecure:
