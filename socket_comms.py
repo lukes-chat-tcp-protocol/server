@@ -2,6 +2,7 @@ import socket
 import threading
 import base64
 import auth_mgmt
+import cmd_mgmt
 import ssl
 
 auth = auth_mgmt.AuthenticationManagement()
@@ -41,50 +42,7 @@ class SocketCommunication:
         else:
             data = conn.recv(size)
         return data
-    def process_command(self, args, client_env, conn):
-        def check_login(permission_level):
-            if client_env['login']:
-                if client_env['permission_level'] >= permission_level:
-                    return True
-                else:
-                    self.send(conn, client_env, b'ERROR PermissionDenied')
-            else:
-                self.send(conn, client_env, b'ERROR LoginRequired')
-                return False
-        if args[0] == 'CLOSE':
-            return 'break'
-        elif args[0] == 'LOGIN':
-            try:
-                username = base64.b64decode(args[1]).decode('utf-8')
-                password = base64.b64decode(args[2]).decode('utf-8')
-            except IndexError:
-                self.send(conn, client_env, b'ERROR InvalidCommand')
-            except:
-                self.send(conn, client_env, b'ERROR InvalidB64Code')
-            else:
-                auth_attempt = auth.login(username, password)
-                if auth_attempt == False:
-                    self.send(conn, client_env, b'ERROR LoginFailed')
-                else:
-                    self.send(conn, client_env, b'ACK')
-                    client_env['login'] = True
-                    client_env['permission_level'] = auth_attempt
-
-            return client_env
-        elif args[0] == 'CONSOLE_LOG':
-            if check_login(3):
-                try:
-                    print(base64.b64decode(args[1].encode()).decode('utf-8'))
-                except IndexError:
-                    self.send(conn, client_env, b'ERROR InvalidCommand')
-                except:
-                    self.send(conn, client_env, b'ERROR InvalidB64Code')
-                else:
-                    self.send(conn, client_env, b'ACK')
-        else:
-            self.send(conn, client_env, b'ERROR InvalidCommand')
-            print(args)
-        return client_env
+    
     def handle_connection(self, conn, addr):
         self.conns.append({
             'conn_obj': conn,
@@ -96,24 +54,11 @@ class SocketCommunication:
         except UnicodeDecodeError:
             conn.close()
         else:
-            print('New connection from {} with mode {}'.format(addr[0], mode))
-            client_env = {
-                'login': False,
-                'permission_level': None,
-                'mode': mode,
-            }
-            self.send(conn, client_env, b'READY')
-            while True:
-                try:
-                    recv = self.recv(conn, client_env, 1024).decode('utf-8')
-                except UnicodeDecodeError:
-                    self.send(conn, client_env, b'ERROR InvalidCommand')
-                else:
-                    args = recv.split(' ')
-                    resp = self.process_command(args, client_env, conn)
-                    if resp == 'break':
-                        break
-                    else:
-                        client_env = resp
-
-            conn.close()
+            if mode.startswith('TO'):
+                cmd = cmd_mgmt.handleToMode(conn, addr, mode, self)
+            elif mode.startswith('FROM'):
+                self.send(conn, {'mode': mode}, b'Mode temporarily not supported')
+                conn.close()
+            else:
+                self.send(conn, {'mode': mode}, b'Unknown mode')
+                conn.close()
