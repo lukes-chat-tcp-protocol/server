@@ -4,6 +4,12 @@ import sqlite3
 class AuthenticationManagement:
     def __init__(self):
         self.db = 'main.db'
+        db = sqlite3.connect(self.db)
+        cur = db.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS users(id AUTOINCREMENT PRIMARY INTEGER, username TEXT, password TEXT, permission_level INTEGER)')
+        db.commit()
+        cur.close()
+        db.close()
     
     def hash_passwd(self, cleartext):
         return bcrypt.hashpw(cleartext.encode(), bcrypt.gensalt())
