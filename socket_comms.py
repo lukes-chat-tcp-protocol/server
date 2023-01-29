@@ -2,12 +2,15 @@ import socket
 import threading
 import base64
 import auth_mgmt
+import ssl
 
 auth = auth_mgmt.AuthenticationManagement()
 
 class SocketCommunication:
     def __init__(self, bind_address, port):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        self.ssl_context.load_cert_chain(certfile='cert.pem', keyfile='privkey.pem')
+        self.sock = self.ssl_context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         self.bind_address = bind_address
         self.port = port
         self.conns = []
