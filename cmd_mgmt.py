@@ -72,8 +72,7 @@ class handleToMode:
                 password = base64.b64decode(args[2]).decode('utf-8')
             except IndexError:
                 self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
-            except Exception as e:
-                print(str(e))
+            except:
                 self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
             else:
                 auth_attempt = auth.login(username, password)
