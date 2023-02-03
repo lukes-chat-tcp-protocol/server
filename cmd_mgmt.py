@@ -123,7 +123,20 @@ class handleFromMode:
         else:
             print('New connection from {} with mode {}'.format(addr[0], mode))
             self.to_conn.client_env['FROM_sid'] = self.sid
+            brk = False
             while True:
                 for msg in self.msg_queue:
                     self.comms.send(self.sock, {'mode': mode}, msg)
+                    if not self.mode.endswith('_TELNET'):
+                        recv = self.comms.recv(self.sock, {'mode': mode}, 1024).decode('utf-8')
+                        if recv == 'ACK':
+                            pass
+                        elif recv.startswith('ERROR'):
+                            print('Warning: Connection {} sent back error: {}'.format(self.sid, recv.split(' ')[1]))
+                        else:
+                            self.sock.close()
+                            brk = True
+                            print('Warning: Connection {} closed after sending invalid response'.format(self.sid))
                 self.msg_queue = []
+                if brk:
+                    break
