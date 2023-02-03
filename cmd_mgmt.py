@@ -31,7 +31,7 @@ class handleToMode:
         self.addr = addr
         self.session_manager = session_manager
         self.sid = self.session_manager.add_conn(self)
-        print('New connection from {} with mode {}'.format(addr[0], mode))
+        print('New connection from {} with mode {} and SID {}'.format(addr[0], mode, self.sid))
         self.client_env = {
             'login': False,
             'permission_level': None,
@@ -121,7 +121,7 @@ class handleFromMode:
             self.comms.send(self.sock, {'mode': mode}, b'TO Connection not found')
             self.sock.close()
         else:
-            print('New connection from {} with mode {}'.format(addr[0], mode))
+            print('New connection from {} with mode {} and SID {}'.format(addr[0], mode, self.sid))
             self.to_conn.client_env['FROM_sid'] = self.sid
             brk = False
             while True:
