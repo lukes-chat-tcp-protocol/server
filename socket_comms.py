@@ -19,7 +19,7 @@ class SocketCommunication:
             self.sock = self.ssl_context.wrap_socket(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
         self.bind_address = args.bind_address
         self.port = args.port
-        self.conns = []
+        self.session_manager = cmd_mgmt.SessionManager()
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     def start_server(self):
         self.sock.bind((self.bind_address, self.port))
@@ -42,10 +42,6 @@ class SocketCommunication:
         return data
     
     def handle_connection(self, conn, addr):
-        self.conns.append({
-            'conn_obj': conn,
-            'address': addr[0]
-        })
         conn.send(b'SEND_MODE ')
         try:
             mode = conn.recv(1024).decode('utf-8').replace('\n', '').replace('\r', '')
@@ -53,10 +49,15 @@ class SocketCommunication:
             conn.close()
         else:
             if mode.startswith('TO'):
-                cmd = cmd_mgmt.handleToMode(conn, addr, mode, self)
+                cmd = cmd_mgmt.handleToMode(conn, addr, mode, self, self.session_manager)
             elif mode.startswith('FROM'):
-                self.send(conn, {'mode': mode}, b'Mode temporarily not supported')
-                conn.close()
+                conn.send(b'SEND_TO_ID ')
+                try:
+                    sid = conn.recv(1024).decode('utf-8').replace('\n', '').replace('\r', '')
+                except UnicodeDecodeError:
+                    conn.close()
+                else:
+                    cmd = cmd_mgmt.handleFromMode(conn, addr, mode, self, self.session_manager, sid)
             else:
                 self.send(conn, {'mode': mode}, b'Unknown mode')
                 conn.close()
