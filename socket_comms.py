@@ -40,7 +40,7 @@ class SocketCommunication:
         else:
             data = conn.recv(size)
         return data
-    
+
     def handle_connection(self, conn, addr):
         conn.send(b'SEND_MODE ')
         try:
