@@ -22,6 +22,13 @@ class SessionManager:
         for sid in self.conn_list:
             if self.conn_list[sid] == handler:
                 return sid
+    def get_handlers_by_username(self, username):
+        handlers = []
+        for sid in self.conn_list:
+            if self.conn_list[sid].mode.startswith('TO'):
+                if self.conn_list[sid].client_env['username'] == username:
+                    handlers.append(self.conn_list[sid])
+        return handlers
 
 class handleToMode:
     def __init__(self, sock, addr, mode, comms, session_manager):
@@ -36,7 +43,8 @@ class handleToMode:
             'login': False,
             'permission_level': None,
             'mode': mode,
-            'FROM_sid': None
+            'FROM_sid': None,
+            'username': None
         }
         self.comms.send(self.sock, self.client_env, b'READY')
         while True:
@@ -82,6 +90,7 @@ class handleToMode:
                     self.comms.send(self.sock, self.client_env, b'ACK')
                     self.client_env['login'] = True
                     self.client_env['permission_level'] = auth_attempt
+                    self.client_env['username'] = username
 
             return self.client_env
         elif args[0] == 'CONSOLE_LOG':
@@ -102,6 +111,22 @@ class handleToMode:
             else:
                 from_handler = self.session_manager.get_handler_from_id(self.client_env['FROM_sid'])
                 from_handler.msg_queue.append(recv.encode())
+        elif args[0] == 'SEND':
+            if check_login(1):
+                try:
+                    username = base64.b64decode(args[1].encode()).decode('utf-8')
+                    message = args[2]
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    handlers = self.session_manager.get_handlers_by_username(username)
+                    for handler in handlers:
+                        handler = self.session_manager.get_handler_from_id(handler.client_env['FROM_sid'])
+                        if not handler == None:
+                            handler.msg_queue.append('RECV {} {}'.format(base64.b64encode(self.client_env['username'].encode()).decode('utf-8'), message).encode())
+                    self.comms.send(self.sock, self.client_env, b'ACK')
         else:
             self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
         return self.client_env

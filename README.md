@@ -21,6 +21,8 @@ A TCP protocol I made to build a chat program.
 | LOGIN (username) (password)     | Making a login request with username and password to the server.                  | Client                        | 1                    |
 | GET_ID                          | Get the session ID.                                                               | Client                        | 1                    |
 | ECHO_FROM (anything or nothing) | Sends the same message back through a FROM session.                               | Both                          | 1                    |
+| SEND (username) (message)       | Sends a message to another user                                                   | Client                        | 1                    |
+| RECV (username) (message)       | Recieve a message from another user using the SEND method                         | Server                        | 1                    |
 | CONSOLE_LOG (message)           | Tells the server to log a message to the server logs.                             | Client                        | 3                    |
 | ERROR (error message)           | Sends to the other side an error message, usually in response to another request. | Both                          | 1                    |
 | ACK                             | Acknowledging a request, usually means a request succeeded.                       | Both                          | 1                    |
