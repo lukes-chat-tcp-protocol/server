@@ -127,6 +127,67 @@ class handleToMode:
                         if not handler == None:
                             handler.msg_queue.append('RECV {} {}'.format(base64.b64encode(self.client_env['username'].encode()).decode('utf-8'), message).encode())
                     self.comms.send(self.sock, self.client_env, b'ACK')
+        elif args[0] == 'CREATE_ACCOUNT':
+            if check_login(2):
+                try:
+                    username = base64.b64decode(args[1].encode()).decode('utf-8')
+                    password = base64.b64decode(args[2].encode()).decode('utf-8')
+                    permission_level = int(args[3])
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except ValueError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    if self.client_env['permission_level'] > permission_level:
+                        auth.create_account(username, password, permission_level)
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ERROR PermissionDenied')
+        elif args[0] == 'DELETE_ACCOUNT':
+            if check_login(3):
+                try:
+                    username = base64.b64decode(args[1].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                else:
+                    if auth.delete_account(username):
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+        elif args[0] == 'CHANGE_PERM_LEVEL':
+            if check_login(2):
+                try:
+                    int(args[2])
+                    username = base64.b64decode(args[1].encode()).decode('utf-8')
+                except IndexError: 
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    account_cpl = auth.get_perm_level(username)
+                    if self.client_env['permission_level'] > int(args[2]) and not username == self.client_env['username'] and account_cpl < self.client_env['permission_level']:
+                        if auth.change_perm_level(username, int(args[2])):
+                            self.comms.send(self.sock, self.client_env, b'ACK')
+                        else:
+                            self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ERROR PermissionDenied')
+        elif args[0] == 'CHANGE_PASSWORD':
+            if check_login(1):
+                try:
+                    current_password = base64.b64decode(args[1].encode()).decode('utf-8')
+                    new_password = base64.b64decode(args[2].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    if auth.change_password(self.client_env['username'], current_password, new_password):
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ERROR PermissionDenied')
         else:
             self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
         return self.client_env

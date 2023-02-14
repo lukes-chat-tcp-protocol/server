@@ -28,10 +28,35 @@ class AuthenticationManagement:
     def delete_account(self, username):
         db = sqlite3.connect(self.db)
         cur = db.cursor()
-        cur.execute('DELETE FROM users WHERE username=?', (username,))
+        cur.execute('SELECT * FROM users')
+        data = cur.fetchall()
+        found = False
+        for seg in data:
+            if seg[1] == username:
+                found = True
+        if found:
+            cur.execute('DELETE FROM users WHERE username=?', (username,))
         cur.close()
         db.commit()
         db.close()
+        return found
+
+    def change_perm_level(self, username, permission_level):
+        db = sqlite3.connect(self.db)
+        cur = db.cursor()
+        cur.execute('SELECT * FROM users')
+        data = cur.fetchall()
+        found = False
+        for seg in data:
+            if seg[1] == username:
+                found = True
+        
+        if found:
+            cur.execute('UPDATE users SET permission_level=? WHERE username=?', (permission_level, username))
+        cur.close()
+        db.commit()
+        db.close()
+        return found
 
     def login(self, username, password):
         db = sqlite3.connect(self.db)
@@ -50,3 +75,28 @@ class AuthenticationManagement:
             return permission_level
         else:
             return False
+
+    def get_perm_level(self, username):
+        db = sqlite3.connect(self.db)
+        cur = db.cursor()
+        cur.execute('SELECT * FROM users')
+        data = cur.fetchall()
+        cur.close()
+        db.close()
+        permission_level = None
+        for entry in data:
+            if entry[1] == username:
+                permission_level = entry[3]
+                break
+        return permission_level
+
+    def change_password(self, username, current_password, new_password):
+        logged_in = self.login(username, current_password)
+        if logged_in:
+            db = sqlite3.connect(self.db)
+            cur = db.cursor()
+            cur.execute('UPDATE users SET password=? WHERE username=?', (self.hash_passwd(new_password).decode('utf-8'), username))
+            cur.close()
+            db.commit()
+            db.close()
+        return logged_in
