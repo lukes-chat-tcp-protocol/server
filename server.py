@@ -13,11 +13,14 @@ args = parser.parse_args()
 if args.bind_address == None:
     args.bind_address = '0.0.0.0'
 
-if args.port == None:
-    args.port = 3462
-
 if args.cert == None:
     args.insecure = True
+
+if args.port == None:
+    if args.insecure:
+        args.port = 3462
+    else:
+        args.port = 3463
 
 comms = socket_comms.SocketCommunication(args)
 
