@@ -111,6 +111,7 @@ class handleToMode:
             else:
                 from_handler = self.session_manager.get_handler_from_id(self.client_env['FROM_sid'])
                 from_handler.msg_queue.append(recv.encode())
+                self.comms.send(self.sock, self.client_env, b'ACK')
         elif args[0] == 'SEND':
             if check_login(1):
                 try:
