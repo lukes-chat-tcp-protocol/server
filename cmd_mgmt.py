@@ -14,7 +14,7 @@ class SessionManager:
     def get_handler_from_id(self, sid):
         try:
             handler = self.conn_list[sid]
-        except IndexError:
+        except KeyError:
             return None
         else:
             return handler
