@@ -1,8 +1,10 @@
 import base64
 import auth_mgmt
+import gc_mgmt
 import uuid
 
 auth = auth_mgmt.AuthenticationManagement()
+gc = gc_mgmt.GroupChatManagement()
 
 class SessionManager:
     def __init__(self):
@@ -24,11 +26,20 @@ class SessionManager:
                 return sid
     def get_handlers_by_username(self, username):
         handlers = []
+        gc_ = False
         for sid in self.conn_list:
             if self.conn_list[sid].mode.startswith('TO'):
                 if self.conn_list[sid].client_env['username'] == username:
                     handlers.append(self.conn_list[sid])
-        return handlers
+        if handlers == []:
+            gcs = gc.get_gcs()
+            if username in gcs:
+                gc_ = True
+                gc_members = gc.get_gc_members(username)
+                for member in gc_members:
+                    gc__, member_handlers = self.get_handlers_by_username(member)
+                    handlers = handlers + member_handlers
+        return gc_, handlers
 
 class handleToMode:
     def __init__(self, sock, addr, mode, comms, session_manager):
@@ -122,11 +133,14 @@ class handleToMode:
                 except:
                     self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
                 else:
-                    handlers = self.session_manager.get_handlers_by_username(username)
+                    gc_, handlers = self.session_manager.get_handlers_by_username(username)
                     for handler in handlers:
                         handler = self.session_manager.get_handler_from_id(handler.client_env['FROM_sid'])
                         if not handler == None:
-                            handler.msg_queue.append('RECV {} {}'.format(base64.b64encode(self.client_env['username'].encode()).decode('utf-8'), message).encode())
+                            if gc_:
+                                handler.msg_queue.append('RECV_GC {} {} {}'.format(args[1], base64.b64encode(self.client_env['username'].encode()).decode('utf-8'), message).encode())
+                            else:
+                                handler.msg_queue.append('RECV {} {}'.format(base64.b64encode(self.client_env['username'].encode()).decode('utf-8'), message).encode())
                     self.comms.send(self.sock, self.client_env, b'ACK')
         elif args[0] == 'CREATE_ACCOUNT':
             if check_login(2):
@@ -157,6 +171,105 @@ class handleToMode:
                         self.comms.send(self.sock, self.client_env, b'ACK')
                     else:
                         self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+        elif args[0] == 'CREATE_GC':
+            if check_login(2):
+                try:
+                    gc_name = base64.b64decode(args[1].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    if gc.create_gc(gc_name, self.client_env['username']) == 1:
+                        self.comms.send(self.sock, self.client_env, b'ERROR AccountExists')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+        elif args[0] == 'DELETE_GC':
+            if check_login(3):
+                try:
+                    gc_name = base64.b64decode(args[1].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    if gc.delete_gc(gc_name) == 1:
+                        self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+        elif args[0] == 'INVITE_TO_GC':
+            if check_login(2):
+                try:
+                    gc_name = base64.b64decode(args[1].encode()).decode('utf-8')
+                    username = base64.b64decode(args[2].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    test = gc.get_gc_members(gc_name)
+                    if test == 1:
+                        self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+                    else:
+                        already_invited = False
+                        if username in gc.invites:
+                            if gc_name in gc.invites[username]:
+                                already_invited = True
+                        if already_invited:
+                            self.comms.send(self.sock, self.client_env, b'ERROR AccountAlreadyInvited')
+                        else:
+                            gc_, handlers = self.session_manager.get_handlers_by_username(username)
+                            for handler in handlers:
+                                handler = self.session_manager.get_handler_from_id(handler.client_env['FROM_sid'])
+                                if not handler == None:
+                                    handler.msg_queue.append('GC_INVITE_RECV {}'.format(args[1]).encode())
+                            if not username in gc.invites:
+                                gc.invites[username] = [gc_name]
+                            else:
+                                gc.invites[username].append(gc_name)
+                            self.comms.send(self.sock, self.client_env, b'ACK')
+        elif args[0] == 'ACCEPT_GC_INVITE':
+            if check_login(1):
+                try:
+                    gc_name = base64.b64decode(args[1].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    invited = False
+                    username = self.client_env['username']
+                    if username in gc.invites:
+                        if gc_name in gc.invites[username]:
+                            invited = True
+                    if invited:
+                        x = 0
+                        for invite in gc.invites[username]:
+                            if invite == gc_name:
+                                break
+                            x += 1
+                        gc.invites[username].pop(x)
+                        gc.add_to_gc(gc_name, username)
+                        self.comms.send(self.sock, self.client_env, b'ACK')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ERROR NotInvited')
+        elif args[0] == 'REMOVE_FROM_GC':
+            if check_login(3):
+                try:
+                    gc_name = base64.b64decode(args[1].encode()).decode('utf-8')
+                    username = base64.b64decode(args[2].encode()).decode('utf-8')
+                except IndexError:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
+                else:
+                    status = gc.remove_from_gc(gc_name, username)
+                    if status == 1:
+                        self.comms.send(self.sock, self.client_env, b'ERROR AccountNotFound')
+                    elif status == 2:
+                        self.comms.send(self.sock, self.client_env, b'ERROR NotAMember')
+                    else:
+                        self.comms.send(self.sock, self.client_env, b'ACK')
         elif args[0] == 'CHANGE_PERM_LEVEL':
             if check_login(2):
                 try:
