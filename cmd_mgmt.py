@@ -166,6 +166,8 @@ class handleToMode:
                     username = base64.b64decode(args[1].encode()).decode('utf-8')
                 except IndexError:
                     self.comms.send(self.sock, self.client_env, b'ERROR InvalidCommand')
+                except:
+                    self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
                 else:
                     if auth.delete_account(username):
                         self.comms.send(self.sock, self.client_env, b'ACK')
