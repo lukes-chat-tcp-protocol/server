@@ -8,6 +8,7 @@ class AuthenticationManagement:
         cur = db.cursor()
         cur.execute('CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT, permission_level INTEGER)')
         cur.close()
+        db.commit()
         db.close()
     
     def hash_passwd(self, cleartext):
