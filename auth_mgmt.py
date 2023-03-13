@@ -20,6 +20,20 @@ class AuthenticationManagement:
     def create_account(self, username, password, permission_level):
         db = sqlite3.connect(self.db)
         cur = db.cursor()
+        cur.execute('SELECT * FROM users')
+        data = cur.fetchall()
+        for user in data:
+            if user[1] == username:
+                cur.close()
+                db.close()
+                return 1
+        cur.execute('SELECT * FROM gcs')
+        data = cur.fetchall()
+        for gc in data:
+            if gc[1] == username:
+                cur.close()
+                db.close()
+                return 1
         password = self.hash_passwd(password).decode('utf-8')
         cur.execute('INSERT INTO users VALUES(NULL, ?, ?, ?)', (username, password, permission_level))
         cur.close()

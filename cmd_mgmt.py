@@ -156,7 +156,9 @@ class handleToMode:
                     self.comms.send(self.sock, self.client_env, b'ERROR InvalidB64Code')
                 else:
                     if self.client_env['permission_level'] > permission_level:
-                        auth.create_account(username, password, permission_level)
+                        status = auth.create_account(username, password, permission_level)
+                        if status == 1:
+                            self.comms.send(self.sock, self.client_env, b'ERROR AccountExists')
                         self.comms.send(self.sock, self.client_env, b'ACK')
                     else:
                         self.comms.send(self.sock, self.client_env, b'ERROR PermissionDenied')
